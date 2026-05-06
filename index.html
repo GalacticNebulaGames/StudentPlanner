@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CERT IV // STUDY PROTOCOL</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0d1117;
+    --surface2: #111820;
+    --border: #1e2d3d;
+    --accent: #00e5ff;
+    --accent2: #00ff9d;
+    --warn: #ff6b35;
+    --text: #c9d1d9;
+    --muted: #4a5568;
+    --dim: #8b949e;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-ui: 'Rajdhani', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,229,255,0.015) 2px,
+      rgba(0,229,255,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 32px 20px 60px; }
+
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+    animation: fadeIn 0.6s ease;
+  }
+  .header-label { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 8px; }
+  .header h1 { font-size: 36px; font-weight: 700; letter-spacing: 2px; color: #fff; line-height: 1; }
+  .header h1 span { color: var(--accent); }
+  .header-sub { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .status-bar { display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+  .stat-value { font-size: 20px; font-weight: 700; color: var(--accent2); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.ok { color: var(--accent); }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+  .tab { font-family: var(--font-mono); font-size: 12px; letter-spacing: 1px; padding: 10px 20px; border: 1px solid transparent; border-bottom: none; cursor: pointer; background: none; color: var(--muted); transition: all 0.2s; position: relative; bottom: -1px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-color: var(--border); border-bottom-color: var(--bg); background: var(--bg); }
+
+  .panel { display: none; animation: fadeIn 0.3s ease; }
+  .panel.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .day-toggle { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .day-btn { font-family: var(--font-mono); font-size: 11px; padding: 6px 14px; border: 1px solid var(--border); background: var(--surface); color: var(--dim); cursor: pointer; letter-spacing: 1px; transition: all 0.2s; }
+  .day-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .day-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.08); }
+
+  .schedule-grid { display: flex; flex-direction: column; gap: 8px; }
+  .time-block { display: grid; grid-template-columns: 120px 1fr auto; align-items: center; gap: 16px; padding: 14px 16px; border: 1px solid var(--border); background: var(--surface); transition: all 0.2s; position: relative; overflow: hidden; }
+  .time-block::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .time-block.study::before { background: var(--accent2); }
+  .time-block.break::before { background: var(--muted); }
+  .time-block.buffer::before { background: var(--warn); }
+  .time-block.free::before { background: var(--accent); }
+  .time-block.optional::before { background: #7c6fcd; }
+  .time-block:hover { border-color: var(--accent); background: var(--surface2); }
+  .time-label { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+  .block-title { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
+  .block-desc { font-size: 12px; color: var(--dim); margin-top: 2px; font-family: var(--font-mono); }
+  .block-tag { font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border: 1px solid; letter-spacing: 1px; white-space: nowrap; }
+  .block-tag.study { border-color: var(--accent2); color: var(--accent2); }
+  .block-tag.break { border-color: var(--muted); color: var(--muted); }
+  .block-tag.buffer { border-color: var(--warn); color: var(--warn); }
+  .block-tag.free { border-color: var(--accent); color: var(--accent); }
+  .block-tag.optional { border-color: #7c6fcd; color: #7c6fcd; }
+
+  .session-card { border: 1px solid var(--border); background: var(--surface); margin-bottom: 12px; overflow: hidden; }
+  .session-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; transition: background 0.2s; }
+  .session-header:hover { background: var(--surface2); }
+  .session-num { font-family: var(--font-mono); font-size: 11px; color: var(--accent); width: 28px; flex-shrink: 0; }
+  .session-title { font-size: 16px; font-weight: 600; flex: 1; letter-spacing: 0.5px; }
+  .session-duration { font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+  .session-chevron { color: var(--muted); transition: transform 0.2s; font-size: 12px; }
+  .session-card.open .session-chevron { transform: rotate(180deg); }
+  .session-body { display: none; padding: 0 16px 16px 56px; border-top: 1px solid var(--border); }
+  .session-card.open .session-body { display: block; }
+  .step-list { list-style: none; padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .step-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--text); }
+  .step-num { font-family: var(--font-mono); font-size: 11px; color: var(--accent2); flex-shrink: 0; padding-top: 2px; }
+
+  .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) {
+    .rules-grid { grid-template-columns: 1fr; }
+    .time-block { grid-template-columns: 100px 1fr; }
+    .time-block .block-tag { display: none; }
+  }
+  .rule-card { border: 1px solid var(--border); background: var(--surface); padding: 16px; }
+  .rule-icon { margin-bottom: 8px; }
+  .rule-title { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: #fff; margin-bottom: 6px; }
+  .rule-desc { font-size: 13px; color: var(--dim); line-height: 1.5; font-family: var(--font-mono); }
+  .rule-card.danger { border-color: rgba(255,107,53,0.4); }
+  .rule-card.danger .rule-title { color: var(--warn); }
+  .rule-card.safe { border-color: rgba(0,255,157,0.3); }
+  .rule-card.safe .rule-title { color: var(--accent2); }
+
+  .checklist-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--border); background: var(--surface); margin-bottom: 8px; cursor: pointer; transition: all 0.2s; user-select: none; }
+  .checklist-item:hover { border-color: var(--accent); }
+  .checklist-item.checked { border-color: var(--accent2); background: rgba(0,255,157,0.05); }
+  .check-box { width: 18px; height: 18px; border: 1px solid var(--muted); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .checklist-item.checked .check-box { border-color: var(--accent2); background: rgba(0,255,157,0.1); }
+  .check-label { font-size: 14px; color: var(--text); flex: 1; }
+  .checklist-item.checked .check-label { color: var(--muted); text-decoration: line-through; }
+  .check-sub { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .progress-bar-wrap { background: var(--surface); border: 1px solid var(--border); height: 4px; margin-bottom: 20px; position: relative; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width 0.4s ease; box-shadow: 0 0 8px var(--accent2); }
+  .progress-label { font-family: var(--font-mono); font-size: 11px; color: var(--dim); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .section-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .alert-box { border: 1px solid rgba(255,107,53,0.5); background: rgba(255,107,53,0.05); padding: 12px 16px; margin-bottom: 20px; font-family: var(--font-mono); font-size: 12px; color: var(--warn); display: flex; gap: 10px; align-items: flex-start; }
+  .alert-box .alert-icon { flex-shrink: 0; }
+  .tip-box { border: 1px solid rgba(0,229,255,0.3); background: rgba(0,229,255,0.04); padding: 12px 16px; margin-bottom: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--dim); display: flex; gap: 10px; align-items: flex-start; }
+  .tip-box strong { color: var(--accent); }
+
+  @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 4px rgba(0,229,255,0.3); } 50% { box-shadow: 0 0 12px rgba(0,229,255,0.6); } }
+  .tab.active { animation: pulse-glow 3s ease infinite; }
+
+  /* ── UNIT TRACKER ── */
+  .units-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .btn-edit {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 7px 14px;
+    border: 1px solid var(--accent);
+    background: rgba(0,229,255,0.06);
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-edit:hover { background: rgba(0,229,255,0.14); }
+  .btn-edit.editing { border-color: var(--accent2); color: var(--accent2); background: rgba(0,255,157,0.07); }
+
+  /* unit row */
+  .unit-row {
+    display: grid;
+    grid-template-columns: 36px 110px 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .unit-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .unit-order { font-family: var(--font-mono); font-size: 13px; color: var(--muted); text-align: center; }
+  .unit-code  { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.5px; }
+  .unit-name-wrap { display: flex; flex-direction: column; gap: 4px; }
+  .unit-name  { font-size: 14px; font-weight: 600; letter-spacing: 0.3px; }
+  .unit-pbar-wrap { height: 3px; background: var(--border); width: 100%; }
+  .unit-pbar-fill { height: 100%; box-shadow: 0 0 6px var(--warn); }
+  .unit-pct-label { font-family: var(--font-mono); font-size: 10px; }
+  .unit-badge { font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border: 1px solid; white-space: nowrap; }
+
+  /* edit controls inside row (hidden by default) */
+  .unit-edit-controls {
+    display: none;
+    grid-column: 1 / -1;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .unit-row.edit-mode .unit-edit-controls { display: flex; }
+
+  .edit-label { font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+
+  .status-select {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 8px;
+    cursor: pointer;
+    outline: none;
+  }
+  .status-select:focus { border-color: var(--accent); }
+
+  .pct-input {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 8px;
+    width: 70px;
+    outline: none;
+  }
+  .pct-input:focus { border-color: var(--accent); }
+
+  .btn-apply {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border: 1px solid var(--accent2);
+    background: rgba(0,255,157,0.07);
+    color: var(--accent2);
+    cursor: pointer;
+    transition: background 0.2s;
+    letter-spacing: 1px;
+  }
+  .btn-apply:hover { background: rgba(0,255,157,0.16); }
+
+  .overall-bar-wrap { margin-top: 20px; }
+
+  /* ── AUTH OVERLAY ── */
+  #auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #auth-overlay::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,229,255,0.015) 2px, rgba(0,229,255,0.015) 4px
+    );
+    pointer-events: none;
+  }
+  .auth-box {
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 32px;
+    position: relative;
+    animation: fadeIn 0.5s ease;
+  }
+  .auth-box::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+  }
+  .auth-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .auth-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+    margin-bottom: 24px;
+  }
+  .auth-title span { color: var(--accent); }
+  .auth-field {
+    margin-bottom: 16px;
+  }
+  .auth-field label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .auth-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    padding: 12px 14px;
+    outline: none;
+    letter-spacing: 2px;
+    transition: border-color 0.2s;
+  }
+  .auth-input:focus { border-color: var(--accent); }
+  .auth-input.error { border-color: var(--warn); }
+  .auth-btn {
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+    padding: 13px;
+    border: 1px solid var(--accent);
+    background: rgba(0,229,255,0.07);
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .auth-btn:hover { background: rgba(0,229,255,0.15); }
+  .auth-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .auth-error {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--warn);
+    margin-top: 12px;
+    min-height: 16px;
+    letter-spacing: 0.5px;
+  }
+  .auth-step {
+    display: none;
+  }
+  .auth-step.active { display: block; }
+  .auth-hint {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 16px;
+    line-height: 1.6;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .auth-hint strong { color: var(--dim); }
+  /* QR code setup screen */
+  .qr-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  #qr-canvas {
+    border: 6px solid #fff;
+    display: block;
+  }
+  .secret-display {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent2);
+    letter-spacing: 3px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    text-align: center;
+    word-break: break-all;
+    width: 100%;
+  }
+  .setup-instructions {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--dim);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+  .setup-instructions strong { color: var(--accent); }
+  .totp-digits {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+  .totp-digit {
+    width: 44px;
+    height: 52px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 22px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .totp-digit:focus { border-color: var(--accent); }
+  .totp-digit.error { border-color: var(--warn); }
+  .totp-timer {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+  #timer-bar-wrap {
+    height: 2px;
+    background: var(--border);
+    margin-bottom: 4px;
+    overflow: hidden;
+  }
+  #timer-bar {
+    height: 100%;
+    background: var(--accent);
+    transition: width 1s linear, background 1s;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     AUTH OVERLAY  (removed from DOM once authenticated)
+════════════════════════════════════════════════════════ -->
+<div id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-label">// SECURE ACCESS</div>
+    <h2 class="auth-title">CERT IV <span>PROTOCOL</span></h2>
+
+    <!-- STEP 1: Password -->
+    <div class="auth-step active" id="step-password">
+      <div class="auth-field">
+        <label>ACCESS PASSWORD</label>
+        <input class="auth-input" id="pw-input" type="password" placeholder="••••••••••••" autocomplete="current-password" />
+      </div>
+      <button class="auth-btn" id="pw-btn" onclick="submitPassword()">AUTHENTICATE →</button>
+      <div class="auth-error" id="pw-error"></div>
+    </div>
+
+    <!-- STEP 2a: 2FA Setup (first time) -->
+    <div class="auth-step" id="step-setup">
+      <div class="setup-instructions">
+        <strong>// 2FA SETUP REQUIRED</strong><br>
+        Scan the QR code below with your authenticator app<br>
+        (Google Authenticator, Authy, etc.) then enter the<br>
+        6-digit code to confirm and activate 2FA.
+      </div>
+      <div class="qr-wrap">
+        <canvas id="qr-canvas" width="180" height="180"></canvas>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:1px;">OR ENTER KEY MANUALLY</div>
+        <div class="secret-display" id="secret-display"></div>
+      </div>
+      <div class="auth-field">
+        <label>CONFIRM CODE FROM APP</label>
+        <div class="totp-digits" id="setup-digits"></div>
+      </div>
+      <div id="timer-bar-wrap"><div id="timer-bar" style="width:100%"></div></div>
+      <div class="totp-timer" id="setup-timer">CODE VALID FOR 30s</div>
+      <button class="auth-btn" id="setup-btn" onclick="confirmSetup()">ACTIVATE 2FA →</button>
+      <div class="auth-error" id="setup-error"></div>
+    </div>
+
+    <!-- STEP 2b: 2FA Verify (returning user) -->
+    <div class="auth-step" id="step-totp">
+      <div class="auth-field">
+        <label>AUTHENTICATOR CODE</label>
+        <div class="totp-digits" id="totp-digits"></div>
+      </div>
+      <div id="timer-bar-wrap2"><div id="timer-bar2" style="width:100%"></div></div>
+      <div class="totp-timer" id="totp-timer">CODE VALID FOR 30s</div>
+      <button class="auth-btn" id="totp-btn" onclick="submitTOTP()">VERIFY →</button>
+      <div class="auth-error" id="totp-error"></div>
+      <div class="auth-hint">Open your authenticator app and enter the<br>6-digit code shown for this site.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-label">// STUDY PROTOCOL v1.0</div>
+    <h1>CERT IV <span>PROGRAMMING</span></h1>
+    <div class="header-sub">upskilled.edu.au &nbsp;|&nbsp; 12–18 month target &nbsp;|&nbsp; 5 hrs/day &nbsp;|&nbsp; mon–fri</div>
+    <div class="status-bar">
+      <div class="stat"><span class="stat-label">TARGET HRS/DAY</span><span class="stat-value ok">5.0</span></div>
+      <div class="stat"><span class="stat-label">CURRENT HRS/DAY</span><span class="stat-value warn">~1.0</span></div>
+      <div class="stat"><span class="stat-label">GAP TO CLOSE</span><span class="stat-value warn">4 HRS</span></div>
+      <div class="stat"><span class="stat-label">SESSIONS/DAY</span><span class="stat-value ok">3</span></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('schedule',this)">SCHEDULE</button>
+    <button class="tab" onclick="switchTab('sessions',this)">SESSION GUIDE</button>
+    <button class="tab" onclick="switchTab('rules',this)">FOCUS RULES</button>
+    <button class="tab" onclick="switchTab('checklist',this)">DAILY CHECKLIST</button>
+    <button class="tab" onclick="switchTab('units',this)">UNIT TRACKER</button>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div id="tab-schedule" class="panel active">
+    <div class="alert-box">
+      <span class="alert-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </span>
+      <span>You're doing ~1 hr/day. This plan ramps you up across 3 weeks — don't jump straight to 5 hrs or you'll burn out. Trust the ramp.</span>
+    </div>
+
+    <div class="day-toggle">
+      <button class="day-btn active" onclick="showDay('std',this)">MON / WED / FRI</button>
+      <button class="day-btn" onclick="showDay('heavy',this)">TUE / THU (HEAVY)</button>
+    </div>
+
+    <div id="day-std" class="schedule-grid">
+      <div class="time-block break"><div class="time-label">MORNING</div><div><div class="block-title">Wake + Wind Up</div><div class="block-desc">No study yet. Eat, move, get human.</div></div><div class="block-tag break">FREE</div></div>
+      <div class="time-block study"><div class="time-label">12:00 – 1:30</div><div><div class="block-title">SESSION 1 — Core Module Work</div><div class="block-desc">Hardest task of the day. New concepts / assessments.</div></div><div class="block-tag study">1.5 HRS</div></div>
+      <div class="time-block break"><div class="time-label">1:30 – 2:00</div><div><div class="block-title">Break</div><div class="block-desc">Food, walk, no screen if possible.</div></div><div class="block-tag break">30 MIN</div></div>
+      <div class="time-block study"><div class="time-label">2:00 – 3:30</div><div><div class="block-title">SESSION 2 — Practice + Exercises</div><div class="block-desc">Apply what you just learned. Code exercises, quizzes.</div></div><div class="block-tag study">1.5 HRS</div></div>
+      <div class="time-block buffer"><div class="time-label">3:30 – 5:00</div><div><div class="block-title">Buffer / Catch-up Window</div><div class="block-desc">If you finished early — bonus. If not — finish here.</div></div><div class="block-tag buffer">FLEX</div></div>
+      <div class="time-block free"><div class="time-label">5:00 – 8:00</div><div><div class="block-title">EARNED FREE TIME</div><div class="block-desc">Games, YouTube, anime. Guilt-free — you did the work.</div></div><div class="block-tag free">REWARD</div></div>
+      <div class="time-block optional"><div class="time-label">8:00 – 9:30</div><div><div class="block-title">SESSION 3 — Optional Night Block</div><div class="block-desc">Review notes, watch course videos, light reading. Low effort.</div></div><div class="block-tag optional">OPTIONAL</div></div>
+    </div>
+
+    <div id="day-heavy" class="schedule-grid" style="display:none;">
+      <div class="time-block study"><div class="time-label">12:00 – 2:00</div><div><div class="block-title">SESSION 1 — Deep Work Block</div><div class="block-desc">Longest session. Tackle assessment tasks or big modules.</div></div><div class="block-tag study">2 HRS</div></div>
+      <div class="time-block break"><div class="time-label">2:00 – 2:30</div><div><div class="block-title">Proper Break</div><div class="block-desc">Step outside if you can. No phones during first 10 min.</div></div><div class="block-tag break">30 MIN</div></div>
+      <div class="time-block study"><div class="time-label">2:30 – 4:00</div><div><div class="block-title">SESSION 2 — Module Continuation</div><div class="block-desc">Continue or move to next topic. Finish whatever's open.</div></div><div class="block-tag study">1.5 HRS</div></div>
+      <div class="time-block free"><div class="time-label">4:00 – 7:30</div><div><div class="block-title">EARNED FREE TIME</div><div class="block-desc">Long break. You hit 3.5 hrs — that's solid progress.</div></div><div class="block-tag free">REWARD</div></div>
+      <div class="time-block study"><div class="time-label">7:30 – 9:00</div><div><div class="block-title">SESSION 3 — Night Session</div><div class="block-desc">Review. Watch lecture videos. Write notes. Low cognitive load.</div></div><div class="block-tag study">1.5 HRS</div></div>
+      <div class="time-block free"><div class="time-label">9:00+</div><div><div class="block-title">Wind Down</div><div class="block-desc">Done for the day. Full 5 hrs hit. No guilt.</div></div><div class="block-tag free">FREE</div></div>
+    </div>
+  </div>
+
+  <!-- SESSIONS -->
+  <div id="tab-sessions" class="panel">
+    <div class="tip-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span><strong>The problem:</strong> You don't know what to do next, so you open YouTube instead. This guide gives you a clear start point for every session — no thinking required.</span>
+    </div>
+    <div class="section-title">// SESSION STRUCTURE</div>
+
+    <div class="session-card" onclick="toggleSession(this)">
+      <div class="session-header"><span class="session-num">01</span><div><div class="session-title">SESSION START RITUAL</div><div style="font-size:12px;color:var(--dim);font-family:var(--font-mono);">Do this before EVERY session — 5 mins</div></div><span class="session-duration">5 MIN</span><span class="session-chevron">▼</span></div>
+      <div class="session-body"><ul class="step-list">
+        <li><span class="step-num">01</span>Open Upskilled portal. Find exactly where you left off.</li>
+        <li><span class="step-num">02</span>Write down ONE goal for this session on paper or Notepad. One task, not a list.</li>
+        <li><span class="step-num">03</span>Phone: Do Not Disturb ON. Put it face-down across the room.</li>
+        <li><span class="step-num">04</span>Close every browser tab except the course. No "I'll just check one thing."</li>
+        <li><span class="step-num">05</span>Start a timer (25 min Pomodoro). Begin.</li>
+      </ul></div>
+    </div>
+
+    <div class="session-card" onclick="toggleSession(this)">
+      <div class="session-header"><span class="session-num">02</span><div><div class="session-title">POMODORO CYCLE (CORE METHOD)</div><div style="font-size:12px;color:var(--dim);font-family:var(--font-mono);">25 min work → 5 min break, repeat</div></div><span class="session-duration">LOOP</span><span class="session-chevron">▼</span></div>
+      <div class="session-body"><ul class="step-list">
+        <li><span class="step-num">→</span><strong>25 min:</strong> Work on ONE thing. Don't switch. If stuck, write the problem down and keep going or skip it.</li>
+        <li><span class="step-num">→</span><strong>5 min:</strong> Stand up, stretch, water. No phone, no YouTube. Hard rule.</li>
+        <li><span class="step-num">→</span>After 4 cycles (2 hrs), take a 20–30 min real break. Food, outside, whatever.</li>
+        <li><span class="step-num">&#x1F4A1;</span>If you get into flow and don't want to stop at 25 min — don't. Ride the flow. Only use breaks when you feel resistance.</li>
+      </ul></div>
+    </div>
+
+    <div class="session-card" onclick="toggleSession(this)">
+      <div class="session-header"><span class="session-num">03</span><div><div class="session-title">WHEN YOU GET STUCK ON A BUG</div><div style="font-size:12px;color:var(--dim);font-family:var(--font-mono);">Don't let one bug eat a whole session</div></div><span class="session-duration">PROTOCOL</span><span class="session-chevron">▼</span></div>
+      <div class="session-body"><ul class="step-list">
+        <li><span class="step-num">01</span>Spend max 15 min on it solo. Actually read the error message first.</li>
+        <li><span class="step-num">02</span>Google the exact error message. Check Stack Overflow or docs.</li>
+        <li><span class="step-num">03</span>Still stuck? Ask Claude, your trainer, or course forums. Don't grind alone.</li>
+        <li><span class="step-num">04</span>If it's completely blocking you — move to the next task and come back. Don't let one bug kill your momentum.</li>
+        <li><span class="step-num">⚠</span>Going down a rabbit hole trying to understand everything is a trap. Learn enough to move forward, deep dive later.</li>
+      </ul></div>
+    </div>
+
+    <div class="session-card" onclick="toggleSession(this)">
+      <div class="session-header"><span class="session-num">04</span><div><div class="session-title">SESSION CLOSE RITUAL</div><div style="font-size:12px;color:var(--dim);font-family:var(--font-mono);">End every session intentionally — 5 mins</div></div><span class="session-duration">5 MIN</span><span class="session-chevron">▼</span></div>
+      <div class="session-body"><ul class="step-list">
+        <li><span class="step-num">01</span>Write down where you left off — exact page, task, or line of code. This is your start point next session. No hunting.</li>
+        <li><span class="step-num">02</span>Write ONE thing you learned today. Even if it's small. Reinforces memory.</li>
+        <li><span class="step-num">03</span>Close the course portal. You're done. Don't guilt-browse.</li>
+        <li><span class="step-num">04</span>Go enjoy your earned free time without thinking about study.</li>
+      </ul></div>
+    </div>
+
+    <div class="session-card" onclick="toggleSession(this)">
+      <div class="session-header"><span class="session-num">05</span><div><div class="session-title">3-WEEK RAMP PLAN</div><div style="font-size:12px;color:var(--dim);font-family:var(--font-mono);">Don't try to go 0 → 5 hrs overnight</div></div><span class="session-duration">RAMP</span><span class="session-chevron">▼</span></div>
+      <div class="session-body"><ul class="step-list">
+        <li><span class="step-num">WK1</span><strong>2 hrs/day target.</strong> Two sessions, 1 hr each. Build the habit first.</li>
+        <li><span class="step-num">WK2</span><strong>3.5 hrs/day target.</strong> Add the second session properly + one night block.</li>
+        <li><span class="step-num">WK3</span><strong>5 hrs/day target.</strong> Full schedule. All three sessions running.</li>
+        <li><span class="step-num">&#x1F4A1;</span>Consistency over volume. 3 hrs every day beats 8 hrs once a week and nothing for 4 days.</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <!-- RULES -->
+  <div id="tab-rules" class="panel">
+    <div class="alert-box">
+      <span class="alert-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </span>
+      <span>YouTube and gaming aren't the enemy — unearned YouTube and gaming are. These rules make free time guilt-free by making it conditional.</span>
+    </div>
+    <div class="section-title" style="margin-top:8px;">// ANTI-DISTRACTION RULES</div>
+    <div class="rules-grid">
+
+      <div class="rule-card danger">
+        <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+        <div class="rule-title">PHONE EXILE</div>
+        <div class="rule-desc">During any study session, phone goes face-down across the room. Not next to you. Across the room. Notification buzz = invisible.</div>
+      </div>
+
+      <div class="rule-card danger">
+        <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
+        <div class="rule-title">NO TAB ROULETTE</div>
+        <div class="rule-desc">One tab open: the course. If you need to Google something, do it, then close the tab. No "while I'm here" browsing.</div>
+      </div>
+
+      <div class="rule-card danger">
+        <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
+        <div class="rule-title">GAMES AFTER SESSIONS</div>
+        <div class="rule-desc">Zero gaming before your daily session minimum is done. After it's done, full permission, no guilt. This makes gaming a reward, not an escape.</div>
+      </div>
+
+      <div class="rule-card danger">
+        <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+        <div class="rule-title">NO "JUST ONE VIDEO"</div>
+        <div class="rule-desc">YouTube during study breaks is a trap. 5 min becomes 45. Use breaks to stand up and move instead. YouTube is post-session only.</div>
+      </div>
+
+      <div class="rule-card safe">
+        <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+        <div class="rule-title">MUSIC IS ALLOWED</div>
+        <div class="rule-desc">Lo-fi, instrumental, game OSTs, anything without lyrics. Queue it up before you start so you don't need to touch YouTube mid-session.</div>
+      </div>
+
+      <div class="rule-card safe">
+        <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+        <div class="rule-title">WRITE IT DOWN</div>
+        <div class="rule-desc">Every new concept you figure out — write it in your own words. This is your strongest memory tool and it's backed by how your brain actually works.</div>
+      </div>
+
+      <div class="rule-card safe">
+        <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></div>
+        <div class="rule-title">SKIP AND RETURN</div>
+        <div class="rule-desc">Stuck on something? Note it, skip it, keep moving. Progress feels better than perfect. You can always come back.</div>
+      </div>
+
+      <div class="rule-card safe">
+        <div class="rule-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <div class="rule-title">WEEKLY REVIEW (SUNDAY)</div>
+        <div class="rule-desc">10 mins Sunday: what did you cover this week? What's next? This prevents Monday "where was I" paralysis — your biggest time killer.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div id="tab-checklist" class="panel">
+    <div class="tip-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span>Use this as your daily pre-flight. Check things off as you go. <strong>Resets each day</strong> when you reload.</span>
+    </div>
+
+    <div class="section-title">// BEFORE YOU START</div>
+    <div id="checklist-pre"></div>
+    <div class="section-title" style="margin-top:20px;">// SESSION 1</div>
+    <div id="checklist-s1"></div>
+    <div class="section-title" style="margin-top:20px;">// SESSION 2</div>
+    <div id="checklist-s2"></div>
+    <div class="section-title" style="margin-top:20px;">// END OF DAY</div>
+    <div id="checklist-eod"></div>
+
+    <div class="progress-label" style="margin-top:20px;">
+      <span>DAILY PROGRESS</span>
+      <span id="progress-text">0 / 0 complete</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- UNIT TRACKER -->
+  <div id="tab-units" class="panel">
+    <div class="tip-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Your full 20-unit course map. Hit <strong>EDIT PROGRESS</strong> to update any unit's status or completion percentage.</span>
+    </div>
+
+    <div class="units-toolbar">
+      <div class="section-title" style="margin:0;border:none;padding:0;">// COURSE PROGRESS — CERT IV IT (PROGRAMMING)</div>
+      <button class="btn-edit" id="btn-edit-toggle" onclick="toggleEditMode()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        EDIT PROGRESS
+      </button>
+    </div>
+
+    <div id="units-list"></div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ══════════════════════════════════════════════════════
+//  AUTH SYSTEM — Password + TOTP 2FA (RFC 6238)
+//  Client-side only. No server needed.
+//
+//  FIRST-TIME SETUP:
+//    1. Open this page in your browser
+//    2. Open DevTools console (F12)
+//    3. Run: await hashPassword('your-chosen-password')
+//    4. Copy the 64-char hex string
+//    5. Replace __REPLACE_WITH_YOUR_HASH__ below with it
+//    6. Re-upload to GitHub Pages
+// ══════════════════════════════════════════════════════
+
+const STORED_HASH = '797b4a2f92ad3f7986c67ad5a307a24208c67b083a951bc5ad3407353ea7efa0';
+
+async function hashPassword(pw) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function base32Decode(b32) {
+  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = 0, val = 0;
+  const out = [];
+  for (const c of b32.toUpperCase().replace(/=+$/, '')) {
+    const idx = alpha.indexOf(c);
+    if (idx === -1) continue;
+    val = (val << 5) | idx;
+    bits += 5;
+    if (bits >= 8) { out.push((val >>> (bits - 8)) & 0xff); bits -= 8; }
+  }
+  return new Uint8Array(out);
+}
+
+async function computeTOTP(secret, counter) {
+  const keyBytes = base32Decode(secret);
+  const msg = new Uint8Array(8);
+  let c = counter;
+  for (let i = 7; i >= 0; i--) { msg[i] = c & 0xff; c = Math.floor(c / 256); }
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']
+  );
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', cryptoKey, msg));
+  const offset = sig[19] & 0xf;
+  const code = ((sig[offset] & 0x7f) << 24 | sig[offset+1] << 16 | sig[offset+2] << 8 | sig[offset+3]) % 1000000;
+  return String(code).padStart(6, '0');
+}
+
+async function verifyTOTP(secret, userCode) {
+  const t = Math.floor(Date.now() / 1000 / 30);
+  for (const offset of [-1, 0, 1]) {
+    if (await computeTOTP(secret, t + offset) === userCode) return true;
+  }
+  return false;
+}
+
+function generateSecret() {
+  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  return Array.from(crypto.getRandomValues(new Uint8Array(20)), b => alpha[b % 32]).join('');
+}
+
+function loadQRLib(cb) {
+  if (window.QRCode) { cb(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  s.onload = cb;
+  document.head.appendChild(s);
+}
+
+function renderQR(secret) {
+  const label = encodeURIComponent('CERT IV Study Protocol');
+  const uri = `otpauth://totp/${label}?secret=${secret}&issuer=StudyProtocol&algorithm=SHA1&digits=6&period=30`;
+  loadQRLib(() => {
+    const canvas = document.getElementById('qr-canvas');
+    canvas.getContext('2d').clearRect(0,0,180,180);
+    new QRCode(canvas, { text: uri, width: 180, height: 180, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+  });
+  document.getElementById('secret-display').textContent = secret.match(/.{1,4}/g).join(' ');
+}
+
+function buildDigitInputs(containerId, onComplete) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.maxLength = 1; inp.inputMode = 'numeric';
+    inp.className = 'totp-digit'; inp.dataset.idx = i;
+    inp.addEventListener('input', () => {
+      inp.value = inp.value.replace(/\D/,'');
+      if (inp.value && i < 5) container.children[i+1].focus();
+      if (getDigitCode(containerId).length === 6) onComplete();
+    });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !inp.value && i > 0) container.children[i-1].focus();
+    });
+    inp.addEventListener('paste', e => {
+      const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+      if (paste.length === 6) {
+        [...container.children].forEach((el,j) => el.value = paste[j]||'');
+        container.children[5].focus();
+        onComplete(); e.preventDefault();
+      }
+    });
+    container.appendChild(inp);
+  }
+}
+
+function getDigitCode(containerId) {
+  return [...document.getElementById(containerId).children].map(i => i.value).join('');
+}
+
+function setDigitError(containerId, isError) {
+  [...document.getElementById(containerId).children].forEach(i => i.classList.toggle('error', isError));
+}
+
+let timerInterval = null;
+function startTimer(barId, labelId) {
+  if (timerInterval) clearInterval(timerInterval);
+  const update = () => {
+    const secs = 30 - (Math.floor(Date.now() / 1000) % 30);
+    const bar = document.getElementById(barId);
+    const lbl = document.getElementById(labelId);
+    if (!bar || !lbl) { clearInterval(timerInterval); return; }
+    bar.style.width = ((secs / 30) * 100) + '%';
+    bar.style.background = secs <= 8 ? 'var(--warn)' : 'var(--accent)';
+    lbl.textContent = `CODE REFRESHES IN ${secs}s`;
+  };
+  update(); timerInterval = setInterval(update, 1000);
+}
+
+let authSecret = localStorage.getItem('auth_secret') || null;
+
+async function submitPassword() {
+  const pw = document.getElementById('pw-input').value;
+  if (!pw) return;
+  const btn = document.getElementById('pw-btn');
+  btn.disabled = true; btn.textContent = 'VERIFYING...';
+
+  if (STORED_HASH === '__REPLACE_WITH_YOUR_HASH__') {
+    const hash = await hashPassword(pw);
+    document.getElementById('pw-error').textContent = 'No password set — see console for your hash.';
+    console.log('%c[AUTH SETUP] Paste this as STORED_HASH in the JS:', 'color:#00e5ff;font-family:monospace;font-size:13px');
+    console.log('%c' + hash, 'color:#00ff9d;font-family:monospace;font-size:15px;letter-spacing:2px');
+    btn.disabled = false; btn.textContent = 'AUTHENTICATE →'; return;
+  }
+
+  const hash = await hashPassword(pw);
+  if (hash !== STORED_HASH) {
+    document.getElementById('pw-error').textContent = '⚠ INCORRECT PASSWORD';
+    document.getElementById('pw-input').classList.add('error');
+    document.getElementById('pw-input').value = '';
+    btn.disabled = false; btn.textContent = 'AUTHENTICATE →'; return;
+  }
+
+  document.getElementById('pw-error').textContent = '';
+  document.getElementById('pw-input').classList.remove('error');
+  document.getElementById('step-password').classList.remove('active');
+
+  if (!authSecret) {
+    authSecret = generateSecret();
+    renderQR(authSecret);
+    buildDigitInputs('setup-digits', () => {});
+    document.getElementById('step-setup').classList.add('active');
+    startTimer('timer-bar', 'setup-timer');
+  } else {
+    buildDigitInputs('totp-digits', () => submitTOTP());
+    document.getElementById('step-totp').classList.add('active');
+    startTimer('timer-bar2', 'totp-timer');
+    setTimeout(() => document.getElementById('totp-digits').children[0].focus(), 50);
+  }
+  btn.disabled = false; btn.textContent = 'AUTHENTICATE →';
+}
+
+async function confirmSetup() {
+  const code = getDigitCode('setup-digits');
+  if (code.length < 6) { document.getElementById('setup-error').textContent = 'Enter the 6-digit code from your app.'; return; }
+  const btn = document.getElementById('setup-btn');
+  btn.disabled = true; btn.textContent = 'VERIFYING...';
+  if (!(await verifyTOTP(authSecret, code))) {
+    document.getElementById('setup-error').textContent = '⚠ CODE INCORRECT — check your app and retry';
+    setDigitError('setup-digits', true);
+    [...document.getElementById('setup-digits').children].forEach(i => i.value = '');
+    document.getElementById('setup-digits').children[0].focus();
+    btn.disabled = false; btn.textContent = 'ACTIVATE 2FA →'; return;
+  }
+  localStorage.setItem('auth_secret', authSecret);
+  grantAccess();
+}
+
+async function submitTOTP() {
+  const code = getDigitCode('totp-digits');
+  if (code.length < 6) return;
+  const btn = document.getElementById('totp-btn');
+  btn.disabled = true; btn.textContent = 'VERIFYING...';
+  if (!(await verifyTOTP(authSecret, code))) {
+    document.getElementById('totp-error').textContent = '⚠ CODE INCORRECT — try again';
+    setDigitError('totp-digits', true);
+    [...document.getElementById('totp-digits').children].forEach(i => i.value = '');
+    document.getElementById('totp-digits').children[0].focus();
+    btn.disabled = false; btn.textContent = 'VERIFY →'; return;
+  }
+  grantAccess();
+}
+
+function grantAccess() {
+  if (timerInterval) clearInterval(timerInterval);
+  const overlay = document.getElementById('auth-overlay');
+  overlay.style.transition = 'opacity 0.4s ease';
+  overlay.style.opacity = '0';
+  setTimeout(() => overlay.remove(), 400);
+}
+
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitPassword();
+});
+window.addEventListener('load', () => setTimeout(() => document.getElementById('pw-input').focus(), 100));
+
+// ── TABS ──────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── DAY TOGGLE ────────────────────────────────────────
+function showDay(type, el) {
+  document.getElementById('day-std').style.display   = type === 'std'   ? 'flex' : 'none';
+  document.getElementById('day-heavy').style.display = type === 'heavy' ? 'flex' : 'none';
+  document.getElementById('day-std').style.flexDirection   = 'column';
+  document.getElementById('day-heavy').style.flexDirection = 'column';
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── SESSION ACCORDION ─────────────────────────────────
+function toggleSession(card) { card.classList.toggle('open'); }
+
+// ── CHECKLIST ─────────────────────────────────────────
+const checklistData = {
+  'checklist-pre': [
+    { label: 'Checked where I left off in the course',   sub: 'Open portal, find your last position' },
+    { label: 'Wrote ONE goal for today on paper',         sub: 'One task. Not a list.' },
+    { label: 'Phone is face-down across the room',        sub: 'DND on. Not next to you.' },
+    { label: 'All tabs closed except the course',         sub: 'Browser is clean.' },
+    { label: 'Music queued up if needed',                 sub: 'Lo-fi, instrumentals, game OSTs' },
+  ],
+  'checklist-s1': [
+    { label: 'Session 1 timer started (25 min block)',    sub: '12:00 – 1:30 target window' },
+    { label: 'Stayed on task for full first Pomodoro',    sub: 'No tab switching mid-session' },
+    { label: 'Completed Session 1 goal or noted why not', sub: 'Record where you got to' },
+  ],
+  'checklist-s2': [
+    { label: 'Took a proper break before Session 2',      sub: 'Food, move, no screen' },
+    { label: 'Session 2 timer started',                   sub: '2:00 – 3:30 target window' },
+    { label: 'Wrote down any bugs or problems encountered', sub: "Don't let them disappear into your brain" },
+    { label: 'Session 2 completed',                       sub: 'Or flex buffer time used' },
+  ],
+  'checklist-eod': [
+    { label: 'Wrote down exactly where I left off',       sub: 'Page, task, or code line — your next start point' },
+    { label: 'Wrote ONE thing I learned today',           sub: 'In my own words' },
+    { label: 'Course portal closed',                      sub: "Study is done. Don't guilt-browse." },
+    { label: 'Free time earned and guilt-free',           sub: 'Games, anime, YouTube — you did the work' },
+  ]
+};
+
+const CHECK_SVG = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+(function buildChecklists() {
+  for (const [id, items] of Object.entries(checklistData)) {
+    const container = document.getElementById(id);
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'checklist-item';
+      div.innerHTML = `<div class="check-box">${CHECK_SVG}</div><div><div class="check-label">${item.label}</div><div class="check-sub">${item.sub}</div></div>`;
+      div.querySelector('.check-box svg').style.display = 'none';
+      div.addEventListener('click', () => {
+        div.classList.toggle('checked');
+        const show = div.classList.contains('checked');
+        div.querySelector('.check-box svg').style.display = show ? '' : 'none';
+        updateProgress();
+      });
+      container.appendChild(div);
+    });
+  }
+  updateProgress();
+})();
+
+function updateProgress() {
+  const all  = document.querySelectorAll('.checklist-item');
+  const done = document.querySelectorAll('.checklist-item.checked');
+  const pct  = all.length ? Math.round((done.length / all.length) * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent  = `${done.length} / ${all.length} complete`;
+}
+
+// ── UNIT TRACKER ──────────────────────────────────────
+const units = [
+  { order:1,  code:'ICTICT426', name:'Identify and evaluate emerging technologies and practices',    status:'commenced', pct:25 },
+  { order:2,  code:'ICTPRG302', name:'Apply introductory programming techniques',                    status:'active',    pct:0  },
+  { order:3,  code:'ICTICT451', name:'Comply with IP, ethics and privacy policies in ICT environments', status:'locked', pct:0  },
+  { order:4,  code:'ICTAII401', name:'Identify opportunities to apply AI, machine learning and deep learning', status:'locked', pct:0 },
+  { order:5,  code:'BSBXCS404', name:'Contribute to cyber security risk management',                 status:'locked',    pct:0  },
+  { order:6,  code:'ICTICT443', name:'Work collaboratively in the ICT industry',                     status:'locked',    pct:0  },
+  { order:7,  code:'ICTSAS432', name:'Identify and resolve client ICT problems',                     status:'locked',    pct:0  },
+  { order:8,  code:'BSBCRT404', name:'Apply advanced critical thinking to work processes',           status:'locked',    pct:0  },
+  { order:9,  code:'ICTCLD301', name:'Evaluate characteristics of cloud computing solutions and services', status:'locked', pct:0 },
+  { order:10, code:'ICTPRG440', name:'Apply introductory programming skills in different languages', status:'locked',    pct:0  },
+  { order:11, code:'ICTPRG430', name:'Apply introductory object-oriented language skills',           status:'locked',    pct:0  },
+  { order:12, code:'ICTICT449', name:'Use version control systems in development environments',      status:'locked',    pct:0  },
+  { order:13, code:'ICTPRG437', name:'Build a user interface',                                       status:'locked',    pct:0  },
+  { order:14, code:'ICTPRG433', name:'Test software developments',                                   status:'locked',    pct:0  },
+  { order:15, code:'ICTDBS416', name:'Create basic relational databases',                            status:'locked',    pct:0  },
+  { order:16, code:'ICTICT435', name:'Create technical documentation',                               status:'locked',    pct:0  },
+  { order:17, code:'ICTPRG441', name:'Apply skills in object-oriented design',                       status:'locked',    pct:0  },
+  { order:18, code:'ICTPRG435', name:'Write scripts for software applications',                      status:'locked',    pct:0  },
+  { order:19, code:'ICTWEB431', name:'Create and style simple markup language documents',            status:'locked',    pct:0  },
+  { order:20, code:'ICTCLD401', name:'Configure cloud services',                                     status:'locked',    pct:0  },
+];
+
+const statusMeta = {
+  commenced: { label:'IN PROGRESS', color:'var(--warn)',   border:'rgba(255,107,53,0.4)', bg:'rgba(255,107,53,0.05)' },
+  active:    { label:'UP NEXT',     color:'var(--accent)', border:'rgba(0,229,255,0.3)',  bg:'rgba(0,229,255,0.04)'  },
+  locked:    { label:'LOCKED',      color:'var(--muted)',  border:'var(--border)',         bg:'var(--surface)'        },
+  done:      { label:'COMPLETE',    color:'var(--accent2)',border:'rgba(0,255,157,0.4)',  bg:'rgba(0,255,157,0.05)'  },
+};
+
+let editMode = false;
+
+function toggleEditMode() {
+  editMode = !editMode;
+  const btn = document.getElementById('btn-edit-toggle');
+  if (editMode) {
+    btn.classList.add('editing');
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> DONE EDITING`;
+  } else {
+    btn.classList.remove('editing');
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> EDIT PROGRESS`;
+  }
+  document.querySelectorAll('.unit-row').forEach(row => {
+    row.classList.toggle('edit-mode', editMode);
+  });
+}
+
+function applyUnit(idx) {
+  const row    = document.getElementById('unit-row-' + idx);
+  const sel    = row.querySelector('.status-select');
+  const pctInp = row.querySelector('.pct-input');
+  const newStatus = sel.value;
+  const newPct    = Math.min(100, Math.max(0, parseInt(pctInp.value) || 0));
+
+  units[idx].status = newStatus;
+  units[idx].pct    = newPct;
+
+  renderUnitRow(idx);
+  updateOverallBar();
+}
+
+function renderUnitRow(idx) {
+  const u   = units[idx];
+  const m   = statusMeta[u.status] || statusMeta.locked;
+  const row = document.getElementById('unit-row-' + idx);
+
+  row.style.borderColor = m.border;
+  row.style.background  = m.bg;
+
+  row.querySelector('.unit-accent').style.background = m.color;
+  row.querySelector('.unit-code').style.color        = m.color;
+  row.querySelector('.unit-name').style.color        = u.status === 'locked' ? 'var(--muted)' : '#fff';
+  row.querySelector('.unit-badge').style.borderColor = m.color;
+  row.querySelector('.unit-badge').style.color       = m.color;
+  row.querySelector('.unit-badge').textContent       = m.label;
+
+  const pbarWrap  = row.querySelector('.unit-pbar-wrap');
+  const pbarFill  = row.querySelector('.unit-pbar-fill');
+  const pctLabel  = row.querySelector('.unit-pct-label');
+
+  if ((u.status === 'commenced' || u.status === 'done') && u.pct > 0) {
+    pbarWrap.style.display  = 'block';
+    pctLabel.style.display  = 'block';
+    pbarFill.style.width    = u.pct + '%';
+    pbarFill.style.background = m.color;
+    pbarFill.style.boxShadow  = `0 0 6px ${m.color}`;
+    pctLabel.style.color    = m.color;
+    pctLabel.textContent    = u.pct + '% complete';
+  } else {
+    pbarWrap.style.display = 'none';
+    pctLabel.style.display = 'none';
+  }
+
+  // sync edit controls
+  row.querySelector('.status-select').value = u.status;
+  row.querySelector('.pct-input').value     = u.pct;
+  if (editMode) row.classList.add('edit-mode');
+}
+
+function updateOverallBar() {
+  const totalPct = units.reduce((acc, u) => {
+    if (u.status === 'done')      return acc + 100;
+    if (u.status === 'commenced') return acc + u.pct;
+    return acc;
+  }, 0);
+  const overall = totalPct / units.length;
+  const doneCount = units.filter(u => u.status === 'done').length;
+  const inProg    = units.filter(u => u.status === 'commenced').length;
+
+  document.getElementById('overall-fill').style.width = overall.toFixed(2) + '%';
+  document.getElementById('overall-label').textContent =
+    `${doneCount} units complete · ${inProg} in progress · ${overall.toFixed(1)}% overall`;
+}
+
+(function buildUnits() {
+  const container = document.getElementById('units-list');
+
+  units.forEach((u, idx) => {
+    const m   = statusMeta[u.status] || statusMeta.locked;
+    const row = document.createElement('div');
+    row.className = 'unit-row';
+    row.id        = 'unit-row-' + idx;
+    row.style.borderColor = m.border;
+    row.style.background  = m.bg;
+
+    const showBar = (u.status === 'commenced' || u.status === 'done') && u.pct > 0;
+
+    row.innerHTML = `
+      <div class="unit-accent" style="background:${m.color}"></div>
+      <div class="unit-order">${String(u.order).padStart(2,'0')}</div>
+      <div class="unit-code"  style="color:${m.color}">${u.code}</div>
+      <div class="unit-name-wrap">
+        <div class="unit-name" style="color:${u.status==='locked'?'var(--muted)':'#fff'}">${u.name}</div>
+        <div class="unit-pbar-wrap" style="display:${showBar?'block':'none'}">
+          <div class="unit-pbar-fill" style="width:${u.pct}%;background:${m.color};box-shadow:0 0 6px ${m.color}"></div>
+        </div>
+        <div class="unit-pct-label" style="display:${showBar?'block':'none'};color:${m.color}">${u.pct}% complete</div>
+      </div>
+      <div class="unit-badge" style="border-color:${m.color};color:${m.color}">${m.label}</div>
+
+      <div class="unit-edit-controls">
+        <span class="edit-label">STATUS</span>
+        <select class="status-select">
+          <option value="locked"    ${u.status==='locked'    ?'selected':''}>LOCKED</option>
+          <option value="active"    ${u.status==='active'    ?'selected':''}>UP NEXT</option>
+          <option value="commenced" ${u.status==='commenced' ?'selected':''}>IN PROGRESS</option>
+          <option value="done"      ${u.status==='done'      ?'selected':''}>COMPLETE</option>
+        </select>
+        <span class="edit-label" style="margin-left:8px">COMPLETION %</span>
+        <input class="pct-input" type="number" min="0" max="100" value="${u.pct}" placeholder="0">
+        <button class="btn-apply" onclick="applyUnit(${idx})">APPLY</button>
+      </div>
+    `;
+
+    container.appendChild(row);
+  });
+
+  // Overall bar
+  const overallWrap = document.createElement('div');
+  overallWrap.className = 'overall-bar-wrap';
+  const initOverall = units.reduce((a,u)=> u.status==='done'?a+100:u.status==='commenced'?a+u.pct:a, 0) / units.length;
+  overallWrap.innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--dim);margin-bottom:6px;">
+      <span>OVERALL COURSE COMPLETION</span><span>1.25 / 20 units</span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);height:4px;overflow:hidden;">
+      <div id="overall-fill" style="height:100%;width:${initOverall.toFixed(2)}%;background:linear-gradient(90deg,var(--accent2),var(--accent));box-shadow:0 0 8px var(--accent2);transition:width 0.4s ease;"></div>
+    </div>
+    <div id="overall-label" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:6px;">
+      0 units complete · 1 in progress · ${initOverall.toFixed(1)}% overall
+    </div>
+  `;
+  container.appendChild(overallWrap);
+  updateOverallBar();
+})();
+</script>
+</body>
+</html>
