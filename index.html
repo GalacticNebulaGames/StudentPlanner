@@ -555,6 +555,82 @@
     background: var(--accent);
     transition: width 1s linear, background 1s;
   }
+
+  /* ── YOUTUBE NOTES ── */
+  .yt-note {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.6;
+    position: relative;
+  }
+  .yt-note:last-child { border-bottom: none; }
+  .yt-note-meta {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .yt-note-del {
+    font-size: 10px;
+    color: var(--warn);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: none;
+    border: none;
+    font-family: var(--font-mono);
+    letter-spacing: 1px;
+    padding: 0;
+  }
+  .yt-note:hover .yt-note-del { opacity: 1; }
+  .yt-note-text { white-space: pre-wrap; word-break: break-word; }
+  .yt-video-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(30,45,61,0.5);
+    transition: background 0.15s;
+    align-items: flex-start;
+  }
+  .yt-video-item:hover { background: var(--surface2); }
+  .yt-video-item.selected { background: rgba(255,68,68,0.07); border-left: 3px solid #ff4444; }
+  .yt-thumb {
+    width: 80px;
+    height: 45px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .yt-video-info { flex: 1; min-width: 0; }
+  .yt-video-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.4;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .yt-video-date {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .yt-note-badge {
+    font-size: 9px;
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
+
 </style>
 </head>
 <body>
@@ -642,6 +718,14 @@
       <div class="dash-tile-arrow">→</div>
     </div>
 
+    <div class="dash-tile" style="--tile-accent:#ff4444;--tile-glow:rgba(255,68,68,0.04);" onclick="showPage('youtube')">
+      <span class="dash-tile-icon">▶️</span>
+      <div class="dash-tile-label">// MODULE 04</div>
+      <div class="dash-tile-title">YOUTUBE VIDEOS</div>
+      <div class="dash-tile-desc">Browse and watch your uploaded videos with private notes per video.</div>
+      <div class="dash-tile-arrow">→</div>
+    </div>
+
     <div class="dash-tile" style="--tile-accent:#bf5fff;--tile-glow:rgba(191,95,255,0.04);" onclick="showPage('stats')">
       <span class="dash-tile-icon">📊</span>
       <div class="dash-tile-label">// MODULE 03</div>
@@ -700,7 +784,7 @@
     </div>
     <div class="stats-fallback" id="stats-fallback" style="display:none;">
       SocialBlade embed unavailable in this browser.<br>
-      <a href="https://socialblade.com/youtube/user/wyattdamemer" target="_blank">VIEW ON SOCIALBLADE →</a>
+      <a href="https://socialblade.com/youtube/channel/UCeS-lNt8RY9Tsv7_DYCYCKg" target="_blank">VIEW ON SOCIALBLADE →</a>
     </div>
     <iframe
       class="socialblade-frame"
@@ -713,7 +797,88 @@
     ></iframe>
   </div>
   <div style="margin-top:14px;text-align:right;">
-    <a class="preview-download-btn" href="https://socialblade.com/youtube/user/wyattdamemer" target="_blank">OPEN FULL PAGE →</a>
+    <a class="preview-download-btn" href="https://socialblade.com/youtube/channel/UCeS-lNt8RY9Tsv7_DYCYCKg" target="_blank">OPEN FULL PAGE →</a>
+  </div>
+</div>
+</div>
+
+<!-- ═══════ PAGE: YOUTUBE VIDEOS ═══════ -->
+<div id="page-youtube" class="page">
+<div class="container" style="max-width:1100px;">
+  <div class="subpage-header">
+    <button class="back-btn" onclick="showPage('dashboard')">← DASHBOARD</button>
+    <div class="subpage-title-wrap">
+      <div class="subpage-label">// MODULE 04</div>
+      <div class="subpage-title">YOUTUBE <span>VIDEOS</span></div>
+    </div>
+    <div id="yt-channel-badge" style="display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:11px;color:var(--muted);">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;">▶</div>
+      <div>
+        <div id="yt-ch-name" style="color:#fff;font-size:13px;letter-spacing:1px;">LOADING...</div>
+        <div id="yt-ch-subs" style="color:var(--muted);font-size:10px;letter-spacing:1px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-viewer-layout" style="grid-template-columns:300px 1fr;">
+
+    <!-- VIDEO LIST -->
+    <div>
+      <div class="file-tree" id="yt-video-list" style="max-height:700px;">
+        <div class="file-tree-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>// UPLOADS</span>
+          <span id="yt-video-count" style="color:var(--muted);font-size:10px;"></span>
+        </div>
+        <div class="fv-loading" id="yt-list-loading">FETCHING VIDEOS...</div>
+      </div>
+      <div id="yt-load-more-wrap" style="display:none;margin-top:8px;">
+        <button class="back-btn" style="width:100%;text-align:center;" onclick="ytLoadMore()">LOAD MORE VIDEOS</button>
+      </div>
+    </div>
+
+    <!-- PLAYER + META + NOTES -->
+    <div>
+      <!-- Player -->
+      <div id="yt-player-wrap" style="background:#000;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);margin-bottom:16px;">
+        <div style="text-align:center;font-family:var(--font-mono);font-size:12px;color:var(--muted);">
+          <div style="font-size:36px;margin-bottom:12px;opacity:0.3;">▶</div>
+          SELECT A VIDEO
+        </div>
+      </div>
+
+      <!-- Metadata -->
+      <div id="yt-meta" style="display:none;border:1px solid var(--border);background:var(--surface);padding:20px;margin-bottom:16px;">
+        <div id="yt-meta-title" style="font-size:18px;font-weight:700;color:#fff;letter-spacing:1px;margin-bottom:12px;line-height:1.3;"></div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">👁 <span id="yt-meta-views" style="color:var(--dim);"></span></div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">👍 <span id="yt-meta-likes" style="color:var(--dim);"></span></div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">💬 <span id="yt-meta-comments" style="color:var(--dim);"></span></div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">📅 <span id="yt-meta-date" style="color:var(--dim);"></span></div>
+        </div>
+        <div id="yt-meta-desc" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);line-height:1.7;max-height:80px;overflow:hidden;position:relative;cursor:pointer;" onclick="ytToggleDesc(this)"></div>
+        <div id="yt-meta-desc-toggle" style="font-family:var(--font-mono);font-size:10px;color:var(--accent);margin-top:6px;cursor:pointer;display:none;" onclick="ytToggleDesc(document.getElementById('yt-meta-desc'))">SHOW MORE ↓</div>
+      </div>
+
+      <!-- Private Notes -->
+      <div id="yt-notes-wrap" style="display:none;border:1px solid var(--border);background:var(--surface);">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:3px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;justify-content:space-between;align-items:center;">
+          <span>// PRIVATE NOTES</span>
+          <span style="color:var(--muted);font-size:10px;">STORED LOCALLY</span>
+        </div>
+        <!-- existing notes -->
+        <div id="yt-notes-list" style="max-height:260px;overflow-y:auto;"></div>
+        <!-- new note input -->
+        <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;">
+          <textarea id="yt-note-input"
+            placeholder="Add a private note..."
+            style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:12px;padding:10px;resize:none;outline:none;height:60px;line-height:1.5;"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();ytAddNote();}"
+          ></textarea>
+          <button class="back-btn" style="white-space:nowrap;padding:10px 16px;" onclick="ytAddNote()">POST →</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 </div>
@@ -1428,7 +1593,7 @@ function updateOverallBar() {
 // ══════════════════════════════════════════════════════
 //  PAGE NAVIGATION
 // ══════════════════════════════════════════════════════
-const PAGES = ['dashboard','planner','files','stats'];
+const PAGES = ['dashboard','planner','files','stats','youtube'];
 
 function showPage(name) {
   PAGES.forEach(p => {
@@ -1437,6 +1602,7 @@ function showPage(name) {
   });
   window.scrollTo(0, 0);
   if (name === 'files') initFileViewer();
+  if (name === 'youtube') initYoutube();
 }
 
 // ══════════════════════════════════════════════════════
@@ -1623,6 +1789,239 @@ function loadScript(src) {
     s.src = src; s.onload = res; s.onerror = rej;
     document.head.appendChild(s);
   });
+}
+
+// ══════════════════════════════════════════════════════
+//  YOUTUBE MODULE
+// ══════════════════════════════════════════════════════
+const YT_API_KEY     = 'AIzaSyAVR38fALHpqp45YMOYX8PXVQLQVqkn-4I';
+const YT_CHANNEL_ID  = 'UCeS-lNt8RY9Tsv7_DYCYCKg';
+const YT_MAX_RESULTS = 20;
+
+let ytVideos       = [];
+let ytNextPageToken = null;
+let ytCurrentVideoId = null;
+let ytInitialized   = false;
+let ytUploadsPlaylistId = null;
+
+// ── Init ──────────────────────────────────────────────
+async function initYoutube() {
+  if (ytInitialized) return;
+  ytInitialized = true;
+  await ytFetchChannel();
+  await ytFetchVideos();
+}
+
+async function ytFetchChannel() {
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${YT_CHANNEL_ID}&key=${YT_API_KEY}`
+    );
+    const data = await res.json();
+    if (data.error) { console.error('YT channel error:', data.error.message); return; }
+    const ch = data.items[0];
+    document.getElementById('yt-ch-name').textContent = ch.snippet.title.toUpperCase();
+    const subs = parseInt(ch.statistics.subscriberCount || 0);
+    document.getElementById('yt-ch-subs').textContent = ytFmtNum(subs) + ' SUBSCRIBERS';
+    ytUploadsPlaylistId = ch.contentDetails.relatedPlaylists.uploads;
+  } catch(e) { console.error('YT channel fetch failed:', e); }
+}
+
+async function ytFetchVideos(pageToken = null) {
+  const loadingEl = document.getElementById('yt-list-loading');
+  if (loadingEl) loadingEl.style.display = 'block';
+
+  try {
+    let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${ytUploadsPlaylistId}&maxResults=${YT_MAX_RESULTS}&key=${YT_API_KEY}`;
+    if (pageToken) url += `&pageToken=${pageToken}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.error) { if (loadingEl) loadingEl.textContent = 'API ERROR: ' + data.error.message; return; }
+
+    ytNextPageToken = data.nextPageToken || null;
+
+    const videoIds = data.items.map(i => i.contentDetails.videoId).join(',');
+    const statsRes  = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${videoIds}&key=${YT_API_KEY}`
+    );
+    const statsData = await statsRes.json();
+    const statsMap  = {};
+    (statsData.items || []).forEach(v => { statsMap[v.id] = v; });
+
+    const newVideos = data.items.map(item => {
+      const vid = item.contentDetails.videoId;
+      const stats = statsMap[vid] || {};
+      return {
+        id:        vid,
+        title:     item.snippet.title,
+        thumb:     item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || '',
+        date:      item.snippet.publishedAt,
+        views:     stats.statistics?.viewCount    || '0',
+        likes:     stats.statistics?.likeCount    || '0',
+        comments:  stats.statistics?.commentCount || '0',
+        desc:      stats.snippet?.description     || '',
+      };
+    });
+
+    ytVideos = [...ytVideos, ...newVideos];
+    ytRenderList();
+
+    if (loadingEl) loadingEl.style.display = 'none';
+    const moreWrap = document.getElementById('yt-load-more-wrap');
+    if (moreWrap) moreWrap.style.display = ytNextPageToken ? 'block' : 'none';
+
+    const countEl = document.getElementById('yt-video-count');
+    if (countEl) countEl.textContent = ytVideos.length + (ytNextPageToken ? '+' : '') + ' VIDEOS';
+
+  } catch(e) {
+    if (loadingEl) loadingEl.textContent = 'FETCH ERROR: ' + e.message;
+    console.error(e);
+  }
+}
+
+async function ytLoadMore() {
+  if (ytNextPageToken) await ytFetchVideos(ytNextPageToken);
+}
+
+// ── Render video list ─────────────────────────────────
+function ytRenderList() {
+  const list = document.getElementById('yt-video-list');
+  // Remove old video items
+  [...list.querySelectorAll('.yt-video-item')].forEach(el => el.remove());
+
+  ytVideos.forEach((v, i) => {
+    const notes = ytGetNotes(v.id);
+    const el = document.createElement('div');
+    el.className = 'yt-video-item' + (v.id === ytCurrentVideoId ? ' selected' : '');
+    el.dataset.vid = v.id;
+    el.innerHTML = `
+      <img class="yt-thumb" src="${v.thumb}" alt="" loading="lazy" />
+      <div class="yt-video-info">
+        <div class="yt-video-title">${escHtml(v.title)}</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div class="yt-video-date">${ytFmtDate(v.date)}</div>
+          ${notes.length ? `<div class="yt-note-badge">📝 ${notes.length}</div>` : ''}
+        </div>
+      </div>`;
+    el.onclick = () => ytSelectVideo(v.id);
+    list.appendChild(el);
+  });
+}
+
+// ── Select + play video ───────────────────────────────
+function ytSelectVideo(videoId) {
+  ytCurrentVideoId = videoId;
+  const v = ytVideos.find(x => x.id === videoId);
+  if (!v) return;
+
+  // Update selected state
+  [...document.querySelectorAll('.yt-video-item')].forEach(el => {
+    el.classList.toggle('selected', el.dataset.vid === videoId);
+  });
+
+  // Embed player
+  document.getElementById('yt-player-wrap').innerHTML = `
+    <iframe
+      width="100%" height="100%"
+      src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0"
+      frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+      style="display:block;width:100%;height:100%;"
+    ></iframe>`;
+
+  // Metadata
+  document.getElementById('yt-meta-title').textContent    = v.title;
+  document.getElementById('yt-meta-views').textContent    = ytFmtNum(v.views) + ' views';
+  document.getElementById('yt-meta-likes').textContent    = ytFmtNum(v.likes) + ' likes';
+  document.getElementById('yt-meta-comments').textContent = ytFmtNum(v.comments) + ' comments';
+  document.getElementById('yt-meta-date').textContent     = new Date(v.date).toLocaleDateString('en-AU', {day:'numeric',month:'long',year:'numeric'});
+
+  const descEl = document.getElementById('yt-meta-desc');
+  descEl.textContent = v.desc || 'No description.';
+  descEl.style.maxHeight = '80px';
+  const toggleEl = document.getElementById('yt-meta-desc-toggle');
+  toggleEl.style.display = v.desc && v.desc.length > 200 ? 'block' : 'none';
+  toggleEl.textContent = 'SHOW MORE ↓';
+
+  document.getElementById('yt-meta').style.display     = 'block';
+  document.getElementById('yt-notes-wrap').style.display = 'block';
+
+  ytRenderNotes(videoId);
+}
+
+function ytToggleDesc(el) {
+  const expanded = el.style.maxHeight === 'none';
+  el.style.maxHeight = expanded ? '80px' : 'none';
+  document.getElementById('yt-meta-desc-toggle').textContent = expanded ? 'SHOW MORE ↓' : 'SHOW LESS ↑';
+}
+
+// ── Private notes (localStorage) ─────────────────────
+function ytNotesKey(videoId) { return 'yt_notes_' + videoId; }
+
+function ytGetNotes(videoId) {
+  try { return JSON.parse(localStorage.getItem(ytNotesKey(videoId)) || '[]'); }
+  catch { return []; }
+}
+
+function ytSaveNotes(videoId, notes) {
+  localStorage.setItem(ytNotesKey(videoId), JSON.stringify(notes));
+}
+
+function ytRenderNotes(videoId) {
+  const list = document.getElementById('yt-notes-list');
+  const notes = ytGetNotes(videoId);
+  if (!notes.length) {
+    list.innerHTML = '<div style="padding:16px;font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;">NO NOTES YET</div>';
+    return;
+  }
+  list.innerHTML = notes.map((n, i) => `
+    <div class="yt-note">
+      <div class="yt-note-meta">
+        <span>${n.date}</span>
+        <button class="yt-note-del" onclick="ytDeleteNote(${i})">✕ DELETE</button>
+      </div>
+      <div class="yt-note-text">${escHtml(n.text)}</div>
+    </div>`).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+function ytAddNote() {
+  const input = document.getElementById('yt-note-input');
+  const text  = input.value.trim();
+  if (!text || !ytCurrentVideoId) return;
+  const notes = ytGetNotes(ytCurrentVideoId);
+  notes.push({
+    text,
+    date: new Date().toLocaleString('en-AU', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+  });
+  ytSaveNotes(ytCurrentVideoId, notes);
+  input.value = '';
+  ytRenderNotes(ytCurrentVideoId);
+  ytRenderList(); // refresh note badge
+}
+
+function ytDeleteNote(index) {
+  if (!ytCurrentVideoId) return;
+  const notes = ytGetNotes(ytCurrentVideoId);
+  notes.splice(index, 1);
+  ytSaveNotes(ytCurrentVideoId, notes);
+  ytRenderNotes(ytCurrentVideoId);
+  ytRenderList();
+}
+
+// ── Helpers ───────────────────────────────────────────
+function ytFmtNum(n) {
+  const num = parseInt(n) || 0;
+  if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+  if (num >= 1000)    return (num/1000).toFixed(1) + 'K';
+  return num.toLocaleString();
+}
+function ytFmtDate(iso) {
+  return new Date(iso).toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'});
+}
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 </script>
